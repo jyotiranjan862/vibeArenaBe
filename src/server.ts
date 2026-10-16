@@ -1,7 +1,7 @@
 import http from 'http';
 import { app } from './app';
 import { config } from './config';
-import { database } from './database';
+import { mongoDatabase } from './database';
 import { logger } from './utils/logger';
 import { socketGateway } from './modules/socket/socket.server';
 
@@ -13,7 +13,7 @@ socketGateway.initialize(server);
 async function startServer(): Promise<void> {
   try {
     // 1. Establish Database Connection
-    await database.connect();
+    await mongoDatabase.connect();
 
     // 2. Start HTTP Server Listener
     server.listen(config.PORT, () => {
@@ -33,7 +33,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
 
   server.close(async () => {
     logger.info('HTTP server closed');
-    await database.disconnect();
+    await mongoDatabase.disconnect();
     logger.info('Graceful shutdown completed successfully');
     process.exit(0);
   });

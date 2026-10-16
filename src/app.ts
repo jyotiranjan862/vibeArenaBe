@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import { config } from './config';
 import { logger } from './utils/logger';
-import { database } from './database';
+import { mongoDatabase } from './database';
 import { globalRateLimiter, errorHandler } from './middlewares';
 import { NotFoundError } from './errors';
 import { ApiResponse } from './utils/api-response';
@@ -49,7 +49,7 @@ app.get('/health', (_req: Request, res: Response) => {
     data: {
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
-      databaseConnected: database.getStatus(),
+      databaseConnected: mongoDatabase.getStatus(),
     },
   });
 });

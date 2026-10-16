@@ -2,19 +2,19 @@ import mongoose from 'mongoose';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-class Database {
-  private static instance: Database;
+class MongoDatabase {
+  private static instance: MongoDatabase;
   private isConnected = false;
 
   private constructor() {
     this.setupListeners();
   }
 
-  public static getInstance(): Database {
-    if (!Database.instance) {
-      Database.instance = new Database();
+  public static getInstance(): MongoDatabase {
+    if (!MongoDatabase.instance) {
+      MongoDatabase.instance = new MongoDatabase();
     }
-    return Database.instance;
+    return MongoDatabase.instance;
   }
 
   private setupListeners(): void {
@@ -32,10 +32,15 @@ class Database {
       this.isConnected = false;
       logger.warn('MongoDB connection disconnected');
     });
+
+    mongoose.connection.on('reconnected', () => {
+      this.isConnected = true;
+      logger.info('MongoDB reconnected successfully');
+    });
   }
 
   public async connect(): Promise<void> {
-    if (this.isConnected) {
+    if (this.isConnected || mongoose.connection.readyState === 1) {
       logger.debug('MongoDB already connected');
       return;
     }
@@ -54,9 +59,10 @@ class Database {
   }
 
   public async disconnect(): Promise<void> {
-    if (!this.isConnected) return;
+    if (!this.isConnected && mongoose.connection.readyState === 0) return;
     try {
       await mongoose.connection.close();
+      this.isConnected = false;
       logger.info('MongoDB connection closed gracefully');
     } catch (error) {
       logger.error({ error }, 'Error while closing MongoDB connection');
@@ -64,8 +70,15 @@ class Database {
   }
 
   public getStatus(): boolean {
-    return this.isConnected;
+    return this.isConnected && mongoose.connection.readyState === 1;
+  }
+
+  public getConnection(): mongoose.Connection {
+    return mongoose.connection;
   }
 }
 
-export const database = Database.getInstance();
+export const mongoDatabase = MongoDatabase.getInstance();
+export const database = mongoDatabase;
+export { MongoDatabase };
+
